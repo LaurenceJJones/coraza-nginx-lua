@@ -1,19 +1,8 @@
 services:
-
-  coreruleset:
-    build:
-      context: coreruleset/
-      dockerfile: Dockerfile
-    volumes:
-      - crs_shared:/coraza:rw
   coraza:
     build:
       context: corazaaccess/
       dockerfile: Dockerfile
-    volumes:
-      - crs_shared:/coreruleset:ro
-    depends_on:
-      - coreruleset
   nginx:
     build: nginx/
     ports:
