@@ -1,3 +1,2 @@
-FROM openresty/openresty:alpine-fat
-RUN luarocks install lua-resty-http
+FROM openresty/openresty:alpine
 EXPOSE 80
