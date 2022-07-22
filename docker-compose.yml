@@ -1,0 +1,29 @@
+services:
+
+  coreruleset:
+    build:
+      context: coreruleset/
+      dockerfile: Dockerfile
+    volumes:
+      - crs_shared:/coraza:rw
+  coraza:
+    build:
+      context: corazaaccess/
+      dockerfile: Dockerfile
+    volumes:
+      - crs_shared:/coreruleset:ro
+    depends_on:
+      - coreruleset
+  nginx:
+    build: nginx/
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/:/etc/nginx/conf.d/:ro
+    depends_on:
+      - coraza
+      - backend
+  backend:
+    image: vulnerables/web-dvwa
+volumes:
+  crs_shared: {}
