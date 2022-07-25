@@ -16,9 +16,9 @@ const (
 )
 
 var files = []string{
-	"/coreruleset/coraza.conf",
-	"/coreruleset/coreruleset/crs-setup.conf.example",
-	"/coreruleset/coreruleset/rules/*.conf",
+	"coraza.conf",
+	"coreruleset/crs-setup.conf.example",
+	"coreruleset/rules/*.conf",
 }
 
 func main() {
@@ -66,15 +66,15 @@ func main() {
 		}()
 		tx.ID = id
 		tx.GetCollection(variables.UniqueID).SetIndex("", 0, id)
+		w.Header().Set("X-Coraza-Id", id)
 		if it, err := tx.ProcessRequest(r); err != nil {
 			http.Error(w, err.Error(), httpStatusError)
 			fmt.Println("Request error:", err)
 		} else if it != nil {
 			w.WriteHeader(httpStatusBlocked)
-			fmt.Fprint(w, "blocked")
+			fmt.Fprint(w, it.RuleID)
 			fmt.Println("Request blocked")
-		}
-		if _, err := w.Write([]byte("ok")); err != nil {
+		} else if _, err := w.Write([]byte("ok")); err != nil {
 			fmt.Println(err)
 			fmt.Println("Response error")
 			return
