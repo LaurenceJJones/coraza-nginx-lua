@@ -11,7 +11,7 @@ require (
 )
 
 require (
-	github.com/corazawaf/coraza/v3 v3.0.0-20221025015745-5b0dfa270c3a
+	github.com/corazawaf/coraza/v3 v3.0.0-20221108125006-22f2f33e5863
 	github.com/corazawaf/libinjection-go v0.1.1 // indirect
-	golang.org/x/net v0.1.0 // indirect
+	golang.org/x/net v0.2.0 // indirect
 )

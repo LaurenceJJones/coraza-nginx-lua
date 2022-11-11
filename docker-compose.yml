@@ -14,5 +14,3 @@ services:
       - backend
   backend:
     image: vulnerables/web-dvwa
-volumes:
-  crs_shared: {}

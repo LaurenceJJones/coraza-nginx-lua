@@ -17,8 +17,12 @@ const (
 	httpStatusError   int = 401
 )
 
+type nopCloser struct{}
+
+func (nopCloser) Close() error { return nil }
+
 func main() {
-	waf, err := coraza.NewWAF(coraza.NewWAFConfig().WithRequestBodyAccess(coraza.NewRequestBodyConfig().WithInMemoryLimit(100)).WithDirectivesFromFile("coraza.conf").WithDirectivesFromFile("coreruleset/crs-setup.conf.example").WithDirectivesFromFile("coreruleset/rules/*.conf"))
+	waf, err := coraza.NewWAF(coraza.NewWAFConfig().WithRequestBodyAccess(coraza.NewRequestBodyConfig().WithInMemoryLimit(100)).WithDirectivesFromFile("/src/coraza.conf").WithDirectivesFromFile("/src/coreruleset/crs-setup.conf.example").WithDirectivesFromFile("/src/coreruleset/rules/*.conf"))
 	if err != nil {
 		panic(err)
 	}
@@ -100,16 +104,37 @@ func processRequest(tx types.Transaction, req *http.Request) (*types.Interruptio
 	if in != nil {
 		return in, nil
 	}
-	if req.Body != nil {
+	if req.Body != nil && req.Body != http.NoBody {
 		_, err := io.Copy(tx.RequestBodyWriter(), req.Body)
 		if err != nil {
-			return tx.GetInterruption(), err
+			return tx.Interruption(), err
 		}
+		_ = req.Body.Close()
+
 		reader, err := tx.RequestBodyReader()
 		if err != nil {
-			return tx.GetInterruption(), err
+			return tx.Interruption(), err
 		}
-		req.Body = io.NopCloser(reader)
+		// req.Body is transparently reinizialied with a new io.ReadCloser.
+		// The http handler will be able to read it.
+		// Prior to Go 1.19 NopCloser does not implement WriterTo if the reader implements it.
+		// - https://github.com/golang/go/issues/51566
+		// - https://tip.golang.org/doc/go1.19#minor_library_changes
+		// This avoid errors like "failed to process request: malformed chunked encoding" when
+		// using io.Copy
+		// In Go 1.19 we just do `req.Body = io.NopCloser(reader)`
+		if rwt, ok := reader.(io.WriterTo); ok {
+			req.Body = struct {
+				io.Reader
+				io.WriterTo
+				io.Closer
+			}{reader, rwt, nopCloser{}}
+		} else {
+			req.Body = struct {
+				io.Reader
+				io.Closer
+			}{reader, nopCloser{}}
+		}
 	}
 
 	return tx.ProcessRequestBody()
